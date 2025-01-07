@@ -1,63 +1,53 @@
-/** Angular Imports */
 import { Component, OnInit } from '@angular/core';
 import { UntypedFormControl } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-
-/** Custom Services */
 import { HomeService } from '../../home.service';
-
-/** Charting Imports */
 import Chart from 'chart.js';
 
-/**
- * Amount Disbursed Pie Chart Component
- */
 @Component({
   selector: 'mifosx-amount-disbursed-pie',
   templateUrl: './amount-disbursed-pie.component.html',
   styleUrls: ['./amount-disbursed-pie.component.scss']
 })
 export class AmountDisbursedPieComponent implements OnInit {
+  officeId = new UntypedFormControl();
+  officeData: any;
+  chart: any;
+  hideOutput = true;
+  showFallback = true;
 
-   /** Static Form control for office Id */
-   officeId = new UntypedFormControl();
-   /** Office Data */
-   officeData: any;
-   /** Chart.js chart */
-   chart: any;
-   /** Substitute for resolver */
-   hideOutput = true;
-   /** Shows fallback element */
-   showFallback = true;
-
-  /**
-   * Fetches offices data from `resolve`.
-   * @param {HomeService} homeService Home Service.
-   * @param {ActivatedRoute} route Activated Route.
-   */
-  constructor(private homeService: HomeService,
-              private route: ActivatedRoute) {
-    this.route.data.subscribe( (data: { offices: any }) => {
+  constructor(
+    private homeService: HomeService,
+    private route: ActivatedRoute
+  ) {
+    this.route.data.subscribe((data: { offices: any }) => {
       this.officeData = data.offices;
     });
   }
 
-  /**
-   * Sets the pie chart with initial office Id 1.
-   * Initialize with office Id 1 for better UX.
-   */
   ngOnInit() {
     this.getChartData();
     this.officeId.patchValue(1);
   }
 
-  /**
-   * Subscribes to value changes of office Id fetches chart data accordingly.
-   */
   getChartData() {
     this.officeId.valueChanges.subscribe((value: number) => {
       this.homeService.getDisbursedAmount(value).subscribe((response: any) => {
-        const data =  Object.entries(response[0]).map(entry => entry[1]);
+        console.log('Disbursed Amount Full Response:', response);
+        console.log('Response type:', typeof response);
+        if (Array.isArray(response)) {
+          console.log('First element:', response[0]);
+          console.log('First element type:', typeof response[0]);
+        }
+
+        if (!response || response.length === 0) {
+          this.showFallback = true;
+          this.hideOutput = true;
+          return;
+        }
+
+        const data = response;
+
         if (!(data[0] === 0 && data[1] === 0)) {
           this.setChart(data);
           this.showFallback = false;
@@ -70,11 +60,6 @@ export class AmountDisbursedPieComponent implements OnInit {
     });
   }
 
-  /**
-   * Creates an instance of Chart.js pie chart
-   * Refer: https://www.chartjs.org/docs/latest/charts/doughnut.html for configuration details.
-   * @param {any} data Chart Data.
-   */
   setChart(data: any) {
     if (!this.chart) {
       this.chart = new Chart('disbursement-pie', {
@@ -100,5 +85,4 @@ export class AmountDisbursedPieComponent implements OnInit {
       this.chart.update();
     }
   }
-
 }

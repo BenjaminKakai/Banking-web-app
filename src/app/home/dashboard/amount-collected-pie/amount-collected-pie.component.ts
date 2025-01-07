@@ -1,63 +1,53 @@
-/** Angular Imports */
 import { Component, OnInit } from '@angular/core';
 import { UntypedFormControl } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-
-/** Custom Services */
 import { HomeService } from '../../home.service';
-
-/** Charting Imports */
 import Chart from 'chart.js';
 
-/**
- * Amount Collected Pie Chart Component
- */
 @Component({
   selector: 'mifosx-amount-collected-pie',
   templateUrl: './amount-collected-pie.component.html',
   styleUrls: ['./amount-collected-pie.component.scss']
 })
 export class AmountCollectedPieComponent implements OnInit {
-
-  /** Static Form control for office Id */
   officeId = new UntypedFormControl();
-  /** Office Data */
   officeData: any;
-  /** Chart.js chart */
   chart: any;
-  /** Substitute for resolver */
   hideOutput = true;
-  /** Shows fallback element */
   showFallback = false;
 
-  /**
-   * Fetches offices data from `resolve`.
-   * @param {HomeService} homeService Home Service.
-   * @param {ActivatedRoute} route Activated Route.
-   */
-  constructor(private homeService: HomeService,
-              private route: ActivatedRoute) {
-    this.route.data.subscribe( (data: { offices: any }) => {
+  constructor(
+    private homeService: HomeService,
+    private route: ActivatedRoute
+  ) {
+    this.route.data.subscribe((data: { offices: any }) => {
       this.officeData = data.offices;
     });
   }
 
-  /**
-   * Sets the pie chart
-   * Initialize with office Id 1 for better UX.
-   */
   ngOnInit() {
     this.getChartData();
     this.officeId.patchValue(1);
   }
 
-  /**
-   * Subscribes to value changes of office Id fetches chart data accordingly.
-   */
   getChartData() {
     this.officeId.valueChanges.subscribe((value: number) => {
       this.homeService.getCollectedAmount(value).subscribe((response: any) => {
-        const data =  Object.entries(response[0]).map(entry => entry[1]);
+        console.log('Collected Amount Full Response:', response);
+        console.log('Response type:', typeof response);
+        if (Array.isArray(response)) {
+          console.log('First element:', response[0]);
+          console.log('First element type:', typeof response[0]);
+        }
+
+        if (!response || response.length === 0) {
+          this.showFallback = true;
+          this.hideOutput = true;
+          return;
+        }
+
+        const data = response;
+
         if (!(data[0] === 0 && data[1] === 0)) {
           this.setChart(data);
           this.hideOutput = false;
@@ -70,11 +60,6 @@ export class AmountCollectedPieComponent implements OnInit {
     });
   }
 
-  /**
-   * Creates an instance of Chart.js pie chart
-   * Refer: https://www.chartjs.org/docs/latest/charts/doughnut.html for configuration details.
-   * @param {any} data Chart Data.
-   */
   setChart(data: any) {
     if (!this.chart) {
       this.chart = new Chart('collection-pie', {
@@ -100,5 +85,4 @@ export class AmountCollectedPieComponent implements OnInit {
       this.chart.update();
     }
   }
-
 }
