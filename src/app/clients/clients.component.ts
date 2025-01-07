@@ -1,4 +1,4 @@
-/** Angular Imports. */
+/** Angular Imports */
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
@@ -22,6 +22,7 @@ export class ClientsComponent implements OnInit {
 
   existsClientsToFilter = false;
   notExistsClientsToFilter = false;
+  errorMessage: string | null = null;
 
   totalRows: number;
   isLoading = false;
@@ -44,9 +45,6 @@ export class ClientsComponent implements OnInit {
     }
   }
 
-  /**
-   * Searches server for query and resource.
-   */
   search(value: string) {
     this.filterText = value;
     this.resetPaginator();
@@ -55,17 +53,37 @@ export class ClientsComponent implements OnInit {
 
   private getClients() {
     this.isLoading = true;
-    this.clientService.searchByText(this.filterText, this.currentPage, this.pageSize, this.sortAttribute, this.sortDirection)
-    .subscribe((data: any) => {
-      this.dataSource.data = data.content;
+    this.errorMessage = null;
 
-      this.totalRows = data.totalElements;
-
-      this.existsClientsToFilter = (data.numberOfElements > 0);
-      this.notExistsClientsToFilter = !this.existsClientsToFilter;
-      this.isLoading = false;
-    }, (error: any) => {
-      this.isLoading = false;
+    this.clientService.searchByText(
+      this.filterText, 
+      this.currentPage, 
+      this.pageSize, 
+      this.sortAttribute, 
+      this.sortDirection
+    ).subscribe({
+      next: (data: any) => {
+        if (data.error) {
+          this.errorMessage = data.message;
+          this.dataSource.data = [];
+          this.totalRows = 0;
+        } else {
+          this.dataSource.data = data.content;
+          this.totalRows = data.totalElements;
+        }
+        
+        this.existsClientsToFilter = (data.numberOfElements > 0);
+        this.notExistsClientsToFilter = !this.existsClientsToFilter;
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        this.errorMessage = 'An unexpected error occurred while loading clients.';
+        this.dataSource.data = [];
+        this.totalRows = 0;
+        this.isLoading = false;
+        this.existsClientsToFilter = false;
+        this.notExistsClientsToFilter = true;
+      }
     });
   }
 

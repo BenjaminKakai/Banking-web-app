@@ -1,9 +1,9 @@
 /** Angular Imports */
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
-/** rxjs Imports */
-import { Observable } from 'rxjs';
 /**
  * Clients service.
  */
@@ -45,8 +45,23 @@ export class ClientsService {
     return this.http.get(`/clients/template?officeId=${officeId}&staffInSelectedOfficeOnly=true`);
   }
 
-  getClientData(clientId: string) {
-    return this.http.get(`/clients/${clientId}`);
+  getClientData(clientId: string): Observable<any> {
+    return this.http.get(`/clients/${clientId}`).pipe(
+      catchError(error => {
+        if (error.status === 500) {
+          console.warn('Error loading client data:', error);
+          return of({ 
+            error: true,
+            message: 'Unable to load client data',
+            // Include minimal client data structure to prevent UI breaks
+            id: clientId,
+            status: { value: 'Unknown' },
+            active: false
+          });
+        }
+        throw error;
+      })
+    );
   }
 
   createClient(client: any) {
@@ -61,14 +76,30 @@ export class ClientsService {
     return this.http.delete(`/clients/${clientId}`);
   }
 
-  getClientDataAndTemplate(clientId: string) {
+
+  getClientDataAndTemplate(clientId: string): Observable<any> {
     const httpParams = new HttpParams()
-        .set('template', 'true')
-        .set('staffInSelectedOfficeOnly', 'true');
-    return this.http.get(`/clients/${clientId}`, { params: httpParams });
+      .set('template', 'true')
+      .set('staffInSelectedOfficeOnly', 'true');
+    return this.http.get(`/clients/${clientId}`, { params: httpParams }).pipe(
+      catchError(error => {
+        if (error.status === 500) {
+          console.warn('Error loading client data and template:', error);
+          return of({
+            error: true,
+            message: 'Unable to load client data',
+            // Include minimal client data structure
+            id: clientId,
+            status: { value: 'Unknown' },
+            active: false
+          });
+        }
+        throw error;
+      })
+    );
   }
 
-  getClientDatatables() {
+    getClientDatatables() {
     const httpParams = new HttpParams().set('apptable', 'm_client');
     return this.http.get(`/datatables`, { params: httpParams });
   }
@@ -382,7 +413,8 @@ export class ClientsService {
     return this.http.get(`/clients/${clientId}/collaterals/template`);
   }
 
-  searchByText(text: string, page: number, pageSize: number, sortAttribute: string = '', sortDirection: string = '') {
+
+  searchByText(text: string, page: number, pageSize: number, sortAttribute: string = '', sortDirection: string = ''): Observable<any> {
     let request: any = {
         request: {
           text
@@ -395,12 +427,29 @@ export class ClientsService {
         ...request,
         sorts: [
           {
-          direction: sortDirection,
-          property: sortAttribute
+            direction: sortDirection,
+            property: sortAttribute
           }
         ]
       };
     }
-    return this.http.post(`/v2/clients/search`, request);
-  }
+
+    return this.http.post(`/v2/clients/search`, request).pipe(
+      catchError(error => {
+        if (error.status === 500 && error.error?.path?.includes('/clients/')) {
+          console.warn('Client data error:', error);
+          // Return a default response structure that matches what the component expects
+          return of({
+            content: [],
+            totalElements: 0,
+            numberOfElements: 0,
+            error: true,
+            message: 'Unable to load complete client data'
+          });
+        }
+        throw error; // rethrow other errors
+      })
+    );
+}
+
 }
