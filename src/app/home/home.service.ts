@@ -13,20 +13,44 @@ import { Observable } from 'rxjs';
 })
 export class HomeService {
 
+  // Report ID mappings
+  private readonly reportIds: { [key: string]: number } = {
+    'Demand-Vs-Collection': 37,
+    'Disbursal-Vs-Awaitingdisbursal': 38,
+    'Client-Trends-By-Day': 2000,
+    'Client-Trends-By-Week': 2001,
+    'Client-Trends-By-Month': 2002,
+    'Loan-Trends-By-Day': 2003,    // You'll need to add these IDs
+    'Loan-Trends-By-Week': 2004,   // to your database and map them
+    'Loan-Trends-By-Month': 2005   // in the report service as well
+  };
+
   /**
    * @param {HttpClient} http Http Client to send requests.
    */
   constructor(private http: HttpClient) { }
 
   /**
+   * Generic method to get report data
+   * @param {string} reportName Report identifier
+   * @param {number} officeId Office Id
+   * @returns {Observable<any>}
+   */
+  private getReportData(reportName: string, officeId: number): Observable<any> {
+    const reportId = this.reportIds[reportName];
+    const httpParams = new HttpParams()
+      .set('R_officeId', officeId.toString())
+      .set('genericResultSet', 'false');
+    
+    return this.http.get(`/reports/${reportId}`, { params: httpParams });
+  }
+
+  /**
    * @param {number} officeId Office Id.
    * @returns {Observable<any>}
    */
   getCollectedAmount(officeId: number): Observable<any> {
-    const httpParams = new HttpParams()
-        .set('R_officeId', officeId.toString())
-        .set('genericResultSet', 'false');
-    return this.http.get('/runreports/Demand Vs Collection', { params: httpParams });
+    return this.getReportData('Demand-Vs-Collection', officeId);
   }
 
   /**
@@ -34,10 +58,7 @@ export class HomeService {
    * @returns {Observable<any>}
    */
   getDisbursedAmount(officeId: number): Observable<any> {
-    const httpParams = new HttpParams()
-        .set('R_officeId', officeId.toString())
-        .set('genericResultSet', 'false');
-    return this.http.get('/runreports/Disbursal Vs Awaitingdisbursal', { params: httpParams });
+    return this.getReportData('Disbursal-Vs-Awaitingdisbursal', officeId);
   }
 
   /**
@@ -45,10 +66,7 @@ export class HomeService {
    * @returns {Observable<any>}
    */
   getClientTrendsByDay(officeId: number): Observable<any> {
-    const httpParams = new HttpParams()
-        .set('R_officeId', officeId.toString())
-        .set('genericResultSet', 'false');
-    return this.http.get('/runreports/ClientTrendsByDay', { params: httpParams });
+    return this.getReportData('Client-Trends-By-Day', officeId);
   }
 
   /**
@@ -56,10 +74,7 @@ export class HomeService {
    * @returns {Observable<any>}
    */
   getClientTrendsByWeek(officeId: number): Observable<any> {
-    const httpParams = new HttpParams()
-        .set('R_officeId', officeId.toString())
-        .set('genericResultSet', 'false');
-    return this.http.get('/runreports/ClientTrendsByWeek', { params: httpParams });
+    return this.getReportData('Client-Trends-By-Week', officeId);
   }
 
   /**
@@ -67,10 +82,7 @@ export class HomeService {
    * @returns {Observable<any>}
    */
   getClientTrendsByMonth(officeId: number): Observable<any> {
-    const httpParams = new HttpParams()
-        .set('R_officeId', officeId.toString())
-        .set('genericResultSet', 'false');
-    return this.http.get('/runreports/ClientTrendsByMonth', { params: httpParams });
+    return this.getReportData('Client-Trends-By-Month', officeId);
   }
 
   /**
@@ -78,10 +90,7 @@ export class HomeService {
    * @returns {Observable<any>}
    */
   getLoanTrendsByDay(officeId: number): Observable<any> {
-    const httpParams = new HttpParams()
-        .set('R_officeId', officeId.toString())
-        .set('genericResultSet', 'false');
-    return this.http.get('/runreports/LoanTrendsByDay', { params: httpParams });
+    return this.getReportData('Loan-Trends-By-Day', officeId);
   }
 
   /**
@@ -89,10 +98,7 @@ export class HomeService {
    * @returns {Observable<any>}
    */
   getLoanTrendsByWeek(officeId: number): Observable<any> {
-    const httpParams = new HttpParams()
-        .set('R_officeId', officeId.toString())
-        .set('genericResultSet', 'false');
-    return this.http.get('/runreports/LoanTrendsByWeek', { params: httpParams });
+    return this.getReportData('Loan-Trends-By-Week', officeId);
   }
 
   /**
@@ -100,10 +106,6 @@ export class HomeService {
    * @returns {Observable<any>}
    */
   getLoanTrendsByMonth(officeId: number): Observable<any> {
-    const httpParams = new HttpParams()
-        .set('R_officeId', officeId.toString())
-        .set('genericResultSet', 'false');
-    return this.http.get('/runreports/LoanTrendsByMonth', { params: httpParams });
+    return this.getReportData('Loan-Trends-By-Month', officeId);
   }
-
 }

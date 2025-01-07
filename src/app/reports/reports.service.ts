@@ -88,10 +88,6 @@ getReportParams(reportName: string): Observable<ReportParameter[]> {
     'Demand-Vs-Collection': 37,
     'Disbursal Vs Awaitingdisbursal': 38,
 
-    // Adding the trend reports
-    'Client Trends By Day': 2000,
-    'Client Trends By Week': 2001,
-    'Client Trends By Month': 2002
 };
 
   const reportId = reportIds[reportName];
