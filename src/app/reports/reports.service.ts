@@ -1,6 +1,7 @@
 /** Angular Imports */
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 /** rxjs Imports */
 import { Observable } from 'rxjs';
@@ -28,7 +29,10 @@ export class ReportsService {
    * @returns {Observable<any>} Reports data
    */
   getReports(): Observable<any> {
-    return this.http.get('/reports');
+
+    // Updated this endpoint
+    return this.http.get(`${environment.serverUrl}/reports`);
+    //return this.http.get('/reports');
   }
 
   /**
@@ -68,13 +72,46 @@ export class ReportsService {
    * @param {string} reportName Report name for which parameters are needed.
    * @returns {Observable<ReportParameter[]>}
    */
-  getReportParams(reportName: string): Observable<ReportParameter[]> {
-    const httpParams = new HttpParams()
-      .set('R_reportListing', `'${reportName}'`)
-      .set('parameterType', 'true');
-    return this.http.get(`/runreports/FullParameterList`, {params: httpParams})
-           .pipe(map((response: any) => response.data.map((entry: any) => new ReportParameter(entry.row)) ));
-  }
+
+//New update to the report api route too. Initiall route commented below
+getReportParams(reportName: string): Observable<ReportParameter[]> {
+  // Map of report names to their IDs
+  const reportIds: { [key: string]: number } = {
+    'Trial Balance Table': 29,
+    'GeneralLedgerReport Table': 30,
+    'Income Statement Table': 31,
+    'Balance Sheet Table': 32,
+    'Trial Balance Summary Report': 33,
+    'Transaction Summary Report': 34,
+    'Trial Balance Summary Report with Asset Owner': 35,
+    'Transaction Summary Report with Asset Owner': 36,
+    'Demand-Vs-Collection': 37,
+    'Disbursal Vs Awaitingdisbursal': 38,
+
+    // Adding the trend reports
+    'Client Trends By Day': 2000,
+    'Client Trends By Week': 2001,
+    'Client Trends By Month': 2002
+};
+
+  const reportId = reportIds[reportName];
+  
+  const httpParams = new HttpParams()
+    .set('fromDate', '2024-01-01')
+    .set('toDate', '2024-12-31');
+    
+  return this.http.get(`${environment.serverUrl}/reports/${reportId}`, {params: httpParams})
+    .pipe(map((response: any) => response.data));
+}
+
+
+  //getReportParams(reportName: string): Observable<ReportParameter[]> {
+  //  const httpParams = new HttpParams()
+   //   .set('R_reportListing', `'${reportName}'`)
+   //   .set('parameterType', 'true');
+    //return this.http.get(`/runreports/FullParameterList`, {params: httpParams})
+      //     .pipe(map((response: any) => response.data.map((entry: any) => new ReportParameter(entry.row)) ));
+  //}
 
   /**
    * @param {string} inputString URL substring containing object details.

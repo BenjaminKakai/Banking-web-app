@@ -15,10 +15,10 @@ export const environment = {
   fineractPlatformTenantIds: window['env']['fineractPlatformTenantIds'] || 'default',
   // For connecting to others servers running elsewhere update the base API URL
   baseApiUrls: window['env']['fineractApiUrls'] ||
-    'https://dev.mifos.io,https://demo.mifos.io,https://qa.mifos.io,https://staging.mifos.io,https://mobile.mifos.io,https://demo.fineract.dev,https://localhost:8443,'
+    'https://dev.mifos.io,https://demo.mifos.io,https://qa.mifos.io,https://staging.mifos.io,https://mobile.mifos.io,https://demo.fineract.dev,https://localhost:8443,' 
     + window.location.protocol + '//' + window.location.hostname + ':' + window.location.port,
-  // For connecting to server running elsewhere set the base API URL
-  baseApiUrl: window['env']['baseApiUrl'] || window.location.protocol + '//' + window.location.hostname + ':' + window.location.port,
+  // UPDATED: Changed to use explicit localhost URL for development
+  baseApiUrl: 'https://localhost:8443',
   allowServerSwitch: env.allow_switching_backend_instance,
   apiProvider: window['env']['apiProvider'] || '/fineract-provider/api',
   apiVersion: window['env']['apiVersion'] || '/v1',
@@ -36,9 +36,7 @@ export const environment = {
   defaultLanguage: window['env']['defaultLanguage'] || 'en-US',
   supportedLanguages: window['env']['supportedLanguages'] || 'cs-CS,de-DE,en-US,es-MX,fr-FR,it-IT,ko-KO,lt-LT,lv-LV,ne-NE,pt-PT,sw-SW',
   preloadClients: window['env']['preloadClients'] || true,
-
   defaultCharDelimiter: window['env']['defaultCharDelimiter'] || ',',
-
   displayBackEndInfo: window['env']['displayBackEndInfo'] || 'true',
   displayTenantSelector: window['env']['displayTenantSelector'] || 'true',
   // Time in seconds, default 60 seconds
@@ -54,4 +52,3 @@ export const environment = {
 
 // Server URL
 environment.serverUrl = `${environment.baseApiUrl}${environment.apiProvider}${environment.apiVersion}`;
-
