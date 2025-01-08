@@ -25,101 +25,81 @@ import { AlertService } from 'app/core/alert/alert.service';
   styleUrls: ['./run-report.component.scss']
 })
 export class RunReportComponent implements OnInit {
-
-  /** Minimum date allowed. */
   minDate = new Date(2000, 0, 1);
-  /** Maximum date allowed. */
   maxDate = new Date();
-
-  /** Contains report specifications i.e: name, type and id */
   report: any = {};
-  /** Formatted data post labeling of report parameters fetched from API */
   paramData: ReportParameter[] = [];
-  /** Array of all parent parameters */
   parentParameters: any[] = [];
-  /** Parameter data to configure pentaho output */
   pentahoReportParameters: any[] = [];
-  /** Data to be passed on to component selectors */
   dataObject: any;
-
-  /** Initializes new form group eportForm */
   reportForm = new UntypedFormGroup({});
-  /** Static Form control for decimal places in output */
   decimalChoice = new UntypedFormControl();
-
-  /** Toggles Report form */
   isCollapsed = false;
-  /** Toggles  Table output. */
   hideTable = true;
-   /** Toggles Chart output */
   hideChart = true;
-   /** Toggles Pentaho output */
   hidePentaho = true;
-  /** Report uses dates */
   reportUsesDates = false;
   exportToS3Allowed = false;
   reportToBeExportedInRepository: any;
   exportToS3Repository: string;
   outputTypeOptions: any[] = [];
-
   isProcessing = false;
 
-  /**
-   * Fetches report specifications from route params and retrieves report parameters data from `resolve`.
-   * @param {ActivatedRoute} route ActivatedRoute.
-   * @param {ReportsService} reportsService ReportsService
-   * @param {SettingsService} settingsService Settings Service
-   * @param {Dates} dateUtils Date Utils
-   */
-  constructor(private route: ActivatedRoute,
-              private reportsService: ReportsService,
-              private settingsService: SettingsService,
-              private alertService: AlertService,
-              private dateUtils: Dates) {
+  constructor(
+    private route: ActivatedRoute,
+    private reportsService: ReportsService,
+    private settingsService: SettingsService,
+    private alertService: AlertService,
+    private dateUtils: Dates
+  ) {
+    this.initializeFromRoute();
+  }
+
+  private initializeFromRoute() {
     this.report.name = this.route.snapshot.params['name'];
     this.route.queryParams.subscribe((queryParams: { type: any, id: any }) => {
       this.report.type = queryParams.type;
       this.report.id = queryParams.id;
     });
     this.route.data.subscribe((data: { reportParameters: ReportParameter[], configurations: any }) => {
-      this.paramData = data.reportParameters;
+      this.paramData = data.reportParameters || [];
       if (this.isTableReport()) {
-        data.configurations.globalConfiguration.forEach((config: GlobalConfiguration) => {
-          if (config.name === 'report-export-s3-folder-name') {
-            this.exportToS3Allowed = config.enabled;
-            this.exportToS3Repository = config.stringValue;
-          }
-        });
+        this.setupConfigurations(data.configurations);
       }
     });
   }
 
+  private setupConfigurations(configurations: any) {
+    if (configurations?.globalConfiguration) {
+      configurations.globalConfiguration.forEach((config: GlobalConfiguration) => {
+        if (config.name === 'report-export-s3-folder-name') {
+          this.exportToS3Allowed = config.enabled;
+          this.exportToS3Repository = config.stringValue;
+        }
+      });
+    }
+  }
+
+  ngOnInit() {
+    this.maxDate = this.settingsService.maxAllowedDate;
+    if (this.paramData?.length) {
+      this.createRunReportForm();
+    }
+  }
+
   isTableReport(): boolean {
-    return (this.report.type === 'Table');
+    return this.report.type === 'Table';
   }
 
   isPentahoReport(): boolean {
-    return (this.report.type === 'Pentaho');
+    return this.report.type === 'Pentaho';
   }
-
-  /**
-   * Creates and sets the run report form.
-   */
-  ngOnInit() {
-    this.maxDate = this.settingsService.maxAllowedDate;
-    this.createRunReportForm();
-  }
-
-  /**
-   * Establishes form controls for Report Parameter's name attribute,
-   * Fetches dropdown options and builds child dependencies.
-   */
-
-
-  
 
   createRunReportForm() {
-    // Create base form controls from parameters
+    if (!this.paramData?.length) {
+      return;
+    }
+
     this.paramData.forEach((param: ReportParameter) => {
       if (!param.parentParameterName) {
         this.reportForm.addControl(param.name, new UntypedFormControl('', Validators.required));
@@ -135,8 +115,7 @@ export class RunReportComponent implements OnInit {
         }
       }
     });
-  
-    // Add Pentaho specific controls
+
     if (this.isPentahoReport()) {
       this.reportForm.addControl('outputType', new UntypedFormControl('', Validators.required));
       this.outputTypeOptions = [
@@ -148,50 +127,52 @@ export class RunReportComponent implements OnInit {
       ];
       this.mapPentahoParams();
     }
-  
-    // Add S3 export control only if allowed
+
+    // Only add S3 control if explicitly allowed
     if (this.exportToS3Allowed) {
       this.reportForm.addControl('exportOutputToS3', new UntypedFormControl(false));
     }
-  
+
     this.decimalChoice.patchValue('0');
     this.setChildControls();
   }
-  
 
   /**
-   * Updates the array of parent parameters.
-   * @param {ReportParameter} parent Parent report parameter
-   */
-  updateParentParameters(parent: ReportParameter) {
-    const parentNames = this.parentParameters.map(parameter => parameter.name);
-    if (!parentNames.includes(parent.name)) { // Parent's first child.
-      this.parentParameters.push(parent);
-    } else { // Parent already has a child
-      const index = parentNames.indexOf(parent.name);
-      this.parentParameters[index] = parent;
-    }
+ * Updates the array of parent parameters.
+ * @param {ReportParameter} parent Parent report parameter
+ */
+updateParentParameters(parent: ReportParameter) {
+  const parentNames = this.parentParameters.map(parameter => parameter.name);
+  if (!parentNames.includes(parent.name)) { // Parent's first child.
+    this.parentParameters.push(parent);
+  } else { // Parent already has a child
+    const index = parentNames.indexOf(parent.name);
+    this.parentParameters[index] = parent;
   }
+}
 
-  /**
-   * Maps pentaho specific names to form-control names.
-   */
-  mapPentahoParams() {
-    this.reportsService.getPentahoParams(this.report.id).subscribe((data: any) => {
-      data.forEach((entry: any) => {
-        const param: ReportParameter = this.paramData
-         .find((_entry: any) => _entry.name === entry.parameterName);
+/**
+ * Maps pentaho specific names to form-control names.
+ */
+mapPentahoParams() {
+  this.reportsService.getPentahoParams(this.report.id).subscribe((data: any) => {
+    data.forEach((entry: any) => {
+      const param = this.paramData.find((_entry: any) => _entry.name === entry.parameterName);
+      if (param) {
         param.pentahoName = `R_${entry.reportParameterName}`;
-      });
+      }
     });
-  }
+  });
+}
 
-  /**
-   * Subscribes to changes in parent parameters value, builds child parameter vis-a-vis parent's value.
-   */
-  setChildControls() {
-    this.parentParameters.forEach((param: ReportParameter) => {
-      this.reportForm.get(param.name).valueChanges.subscribe((option: any) => {
+/**
+ * Subscribes to changes in parent parameters value, builds child parameter vis-a-vis parent's value.
+ */
+setChildControls() {
+  this.parentParameters.forEach((param: ReportParameter) => {
+    const control = this.reportForm.get(param.name);
+    if (control) {
+      control.valueChanges.subscribe((option: any) => {
         param.childParameters.forEach((child: ReportParameter) => {
           if (child.displayType === 'none') {
             this.reportForm.addControl(child.name, new UntypedFormControl(child.defaultVal));
@@ -204,22 +185,23 @@ export class RunReportComponent implements OnInit {
           }
         });
       });
-    });
-  }
+    }
+  });
+}
 
-  /**
-   * Fetches Select Dropdown options for param type "Select".
-   * @param {ReportParameter} param Parameter for which dropdown options are required.
-   * @param {string} inputstring url substring for API call.
-   */
-  fetchSelectOptions(param: ReportParameter, inputstring: string) {
-    this.reportsService.getSelectOptions(inputstring).subscribe((options: SelectOption[]) => {
-      param.selectOptions = options;
-      if (param.selectAll === 'Y') {
-        param.selectOptions.push({id: '-1', name: 'All'});
-      }
-    });
-  }
+/**
+ * Fetches Select Dropdown options for param type "Select".
+ * @param {ReportParameter} param Parameter for which dropdown options are required.
+ * @param {string} inputstring url substring for API call.
+ */
+fetchSelectOptions(param: ReportParameter, inputstring: string) {
+  this.reportsService.getSelectOptions(inputstring).subscribe((options: SelectOption[]) => {
+    param.selectOptions = options;
+    if (param.selectAll === 'Y') {
+      param.selectOptions.push({id: '-1', name: 'All'});
+    }
+  });
+}
 
   /**
    * Formats user response and readies it for utilization by run report function.

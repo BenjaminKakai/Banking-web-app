@@ -57,32 +57,45 @@ export class TableAndSmsComponent implements OnChanges {
   /**
    * Fetches run report data post changes in run report form.
    */
+
   ngOnChanges() {
     this.hideOutput = true;
     this.columnTypes = [];
     this.displayedColumns = [];
-    this.getRunReportData();
+    if (this.dataObject && this.dataObject.formData) {
+      this.getRunReportData();
+    }
   }
-
+  
   getRunReportData() {
-    const exportS3 = this.dataObject.formData.exportS3;
+    const exportS3 = this.dataObject?.formData?.exportS3 || false;
+    
+    if (!this.dataObject?.report?.name || !this.dataObject.formData) {
+      return;
+    }
+  
     this.reportsService.getRunReportData(this.dataObject.report.name, this.dataObject.formData)
-    .subscribe( (res: any) => {
-      this.toBeExportedToRepo = exportS3;
-      if (!this.toBeExportedToRepo) {
-        this.csvData = res.data;
-        this.notExistsReportData = (res.data.length === 0);
-        this.setOutputTable(res.data);
-        res.columnHeaders.forEach((header: any) => {
-          this.columnTypes.push(header.columnDisplayType);
-          this.displayedColumns.push(header.columnName);
-        });
-      }
-      this.hideOutput = false;
-      this.progressBarService.decrease();
-    });
+      .subscribe((res: any) => {
+        this.toBeExportedToRepo = exportS3;
+        
+        if (!this.toBeExportedToRepo && res?.data) {
+          this.csvData = res.data;
+          this.notExistsReportData = (res.data.length === 0);
+          this.setOutputTable(res.data);
+          
+          if (res.columnHeaders) {
+            res.columnHeaders.forEach((header: any) => {
+              this.columnTypes.push(header.columnDisplayType);
+              this.displayedColumns.push(header.columnName);
+            });
+          }
+        }
+        
+        this.hideOutput = false;
+        this.progressBarService.decrease();
+      });
   }
-
+  
   /**
    * Sets up a dynamic Mat Table.
    * @param {any} data Mat Table data
