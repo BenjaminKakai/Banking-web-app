@@ -23,10 +23,16 @@ import { OAuth2Token } from './o-auth2-token.model';
 /**
  * Authentication workflow.
  */
-@Injectable()
+@Injectable(
+  {
+  providedIn: 'root'
+})
+
 export class AuthenticationService {
   // User logged in boolean
   private userLoggedIn: boolean;
+
+  private userPermissions: string[] = [];
 
   /** Denotes whether the user credentials should persist through sessions. */
   private rememberMe: boolean;
@@ -191,6 +197,11 @@ export class AuthenticationService {
     } else {
       this.authenticationInterceptor.setAuthorizationToken(credentials.base64EncodedAuthenticationKey);
     }
+
+    if (credentials.permissions) {
+      this.userPermissions = credentials.permissions;
+    }
+
     if (credentials.isTwoFactorAuthenticationRequired) {
       this.credentials = credentials;
       this.alertService.alert({ type: 'Two Factor Authentication Required', message: 'Two Factor Authentication Required' });
@@ -281,14 +292,20 @@ export class AuthenticationService {
    *
    * @param {Credentials} credentials Authenticated user credentials.
    */
+
   private setCredentials(credentials?: Credentials) {
     if (credentials) {
       credentials.rememberMe = this.rememberMe;
+      // Store permissions with credentials
+      if (credentials.permissions) {
+        this.userPermissions = credentials.permissions;
+      }
       this.storage.setItem(this.credentialsStorageKey, JSON.stringify(credentials));
     } else {
       this.storage.removeItem(this.credentialsStorageKey);
       this.storage.removeItem(this.oAuthTokenDetailsStorageKey);
       this.storage.removeItem(this.twoFactorAuthenticationTokenStorageKey);
+      this.userPermissions = []; // Clear permissions on logout
     }
   }
 
@@ -389,4 +406,14 @@ export class AuthenticationService {
     return this.userLoggedIn;
   }
 
+  hasPermission(permission: string): Observable<boolean> {
+    permission = permission.trim();
+    const result = this.userPermissions.includes('ALL_FUNCTIONS') || 
+      (permission.substring(0, 5) === 'READ_' && this.userPermissions.includes('ALL_FUNCTIONS_READ')) ||
+      this.userPermissions.includes(permission);
+    
+    return of(result);
+  }
 }
+
+

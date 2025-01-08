@@ -3,7 +3,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-
+import { AuthenticationService } from '../core/authentication/authentication.service';  // adjust path as needed
+import { mergeMap } from 'rxjs/operators';
 /**
  * Clients service.
  */
@@ -14,7 +15,9 @@ export class ClientsService {
   /**
    * @param {HttpClient} http Http Client to send requests.
    */
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient,
+    private auth: AuthenticationService
+  ) { }
 
   getFilteredClients(orderBy: string, sortOrder: string, orphansOnly: boolean, displayName: string, officeId?: any): Observable<any> {
     let httpParams = new HttpParams()
@@ -189,10 +192,30 @@ export class ClientsService {
     return this.http.get(`/runreports/ClientSummary`, { params: httpParams });
   }
 
+
   getClientProfileImage(clientId: string) {
     const httpParams = new HttpParams().set('maxHeight', '150');
-    return this.http.skipErrorHandler().get(`/clients/${clientId}/images`, { params: httpParams, responseType: 'text' });
-  }
+    
+    return this.auth.hasPermission('READ_CLIENT_IMAGE').pipe(
+      mergeMap((hasPermission: boolean) => {
+        if (hasPermission) {
+          return this.http.skipErrorHandler().get(
+            `/clients/${clientId}/images`, 
+            { params: httpParams, responseType: 'text' }
+          );
+        } else {
+          console.warn('No permission to view client images');
+          return of(null);
+        }
+      })
+    );
+}
+
+
+ // getClientProfileImage(clientId: string) {
+   // const httpParams = new HttpParams().set('maxHeight', '150');
+ //   return this.http.skipErrorHandler().get(`/clients/${clientId}/images`, { params: httpParams, responseType: 'text' });
+ // }
 
   uploadClientProfileImage(clientId: string, image: File) {
     const formData = new FormData();

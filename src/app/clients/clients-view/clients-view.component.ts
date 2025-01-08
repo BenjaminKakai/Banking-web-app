@@ -44,13 +44,29 @@ export class ClientsViewComponent implements OnInit {
     });
   }
 
+
   ngOnInit() {
     this.clientsService.getClientProfileImage(this.clientViewData.id).subscribe(
-      (base64Image: any) => {
-        this.clientImage = this._sanitizer.bypassSecurityTrustResourceUrl(base64Image);
-      }, (error: any) => {}
+      (base64Image: string | null) => {
+        if (base64Image) {
+          this.clientImage = this._sanitizer.bypassSecurityTrustResourceUrl(base64Image);
+        }
+      },
+      (error: Error) => {
+        console.error('Error loading client image:', error);
+        // Handle error appropriately
+      }
     );
-  }
+}
+
+  
+//  ngOnInit() {
+   // this.clientsService.getClientProfileImage(this.clientViewData.id).subscribe(
+      //(base64Image: any) => {
+     //   this.clientImage = this._sanitizer.bypassSecurityTrustResourceUrl(base64Image);
+      //}, (error: any) => {}
+ //   );
+ // }
 
   isActive(): boolean {
     return (this.clientViewData.status.value === 'Active');
