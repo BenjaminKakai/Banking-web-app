@@ -114,40 +114,50 @@ export class RunReportComponent implements OnInit {
    * Establishes form controls for Report Parameter's name attribute,
    * Fetches dropdown options and builds child dependencies.
    */
+
+
+  
+
   createRunReportForm() {
-    this.paramData.forEach(
-      (param: ReportParameter) => {
-        if (!param.parentParameterName) { // Non Child Parameter
-          this.reportForm.addControl(param.name, new UntypedFormControl('', Validators.required));
-          if (param.displayType === 'select') {
-            this.fetchSelectOptions(param, param.name);
-          }
-        } else { // Child Parameter
-          const parent: ReportParameter = this.paramData
-            .find((entry: any) => entry.name === param.parentParameterName);
-          if (parent != null) {
-            parent.childParameters.push(param);
-            this.updateParentParameters(parent);
-          }
+    // Create base form controls from parameters
+    this.paramData.forEach((param: ReportParameter) => {
+      if (!param.parentParameterName) {
+        this.reportForm.addControl(param.name, new UntypedFormControl('', Validators.required));
+        if (param.displayType === 'select') {
+          this.fetchSelectOptions(param, param.name);
         }
-      });
+      } else {
+        const parent = this.paramData.find((entry: any) => entry.name === param.parentParameterName);
+        if (parent) {
+          parent.childParameters = parent.childParameters || [];
+          parent.childParameters.push(param);
+          this.updateParentParameters(parent);
+        }
+      }
+    });
+  
+    // Add Pentaho specific controls
     if (this.isPentahoReport()) {
       this.reportForm.addControl('outputType', new UntypedFormControl('', Validators.required));
       this.outputTypeOptions = [
-        { 'name': 'PDF format', 'value': 'PDF' },
-        { 'name': 'Normal format', 'value': 'HTML' },
-        { 'name': 'Excel format', 'value': 'XLS' },
-        { 'name': 'Excel 2007 format', 'value': 'XLSX' },
-        { 'name': 'CSV format', 'value': 'CSV' }
+        { name: 'PDF format', value: 'PDF' },
+        { name: 'Normal format', value: 'HTML' },
+        { name: 'Excel format', value: 'XLS' },
+        { name: 'Excel 2007 format', value: 'XLSX' },
+        { name: 'CSV format', value: 'CSV' }
       ];
       this.mapPentahoParams();
     }
+  
+    // Add S3 export control only if allowed
     if (this.exportToS3Allowed) {
       this.reportForm.addControl('exportOutputToS3', new UntypedFormControl(false));
     }
+  
     this.decimalChoice.patchValue('0');
     this.setChildControls();
   }
+  
 
   /**
    * Updates the array of parent parameters.
