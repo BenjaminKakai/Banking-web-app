@@ -8,6 +8,7 @@ import { MatTableDataSource } from '@angular/material/table';
 /** Custom Services */
 import { environment } from 'environments/environment';
 import { ClientsService } from './clients.service';
+import { AuthenticationService } from '../core/authentication/authentication.service'; // Add this import
 
 @Component({
   selector: 'mifosx-clients',
@@ -37,13 +38,24 @@ export class ClientsComponent implements OnInit {
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
 
-  constructor(private clientService: ClientsService) { }
+  constructor(
+    private clientService: ClientsService,
+    private authService: AuthenticationService
+  ) { }
 
   ngOnInit() {
+    // Debug permission check
+    this.authService.hasPermission(this.clientService.getPermissionString('176'))
+      .subscribe(
+        (hasPermission: boolean) => console.log('Current permission status:', hasPermission),
+        (error: Error) => console.error('Error checking permission:', error)
+      );
+
     if (environment.preloadClients) {
       this.getClients();
     }
   }
+
 
   search(value: string) {
     this.filterText = value;

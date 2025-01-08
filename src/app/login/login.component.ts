@@ -10,14 +10,13 @@ import { Alert } from '../core/alert/alert.model';
 
 /** Custom Services */
 import { AlertService } from '../core/alert/alert.service';
+import { AuthenticationService } from '../core/authentication/authentication.service'; // Add this import
 
 /** Environment Imports */
 import { environment } from '../../environments/environment';
 import { SettingsService } from 'app/settings/settings.service';
 
-/**
- * Login component.
- */
+
 @Component({
   selector: 'mifosx-login',
   templateUrl: './login.component.html',
@@ -34,17 +33,13 @@ export class LoginComponent implements OnInit, OnDestroy {
   /** Subscription to alerts. */
   alert$: Subscription;
 
-  /**
-   * @param {AlertService} alertService Alert Service.
-   * @param {Router} router Router for navigation.
-   */
-  constructor(private alertService: AlertService,
-      private settingsService: SettingsService,
-      private router: Router) { }
+  constructor(
+    private alertService: AlertService,
+    private settingsService: SettingsService,
+    private router: Router,
+    private authService: AuthenticationService  // Add this injection
+  ) { }
 
-  /**
-   * Subscribes to alert event of alert service.
-   */
   ngOnInit() {
     this.alert$ = this.alertService.alertEvent.subscribe((alertEvent: Alert) => {
       const alertType = alertEvent.type;
@@ -57,17 +52,21 @@ export class LoginComponent implements OnInit, OnDestroy {
       } else if (alertType === 'Authentication Success') {
         this.resetPassword = false;
         this.twoFactorAuthenticationRequired = false;
+        // Add this line to set permissions when authentication succeeds
+        this.authService.setUserPermissions(alertEvent.payload?.permissions || []);
         this.router.navigate(['/'], { replaceUrl: true });
       }
     });
   }
 
-  /**
-   * Unsubscribes from alerts.
-   */
   ngOnDestroy() {
-    this.alert$.unsubscribe();
+    if (this.alert$) {
+      this.alert$.unsubscribe();
+    }
   }
+
+
+
 
   reloadSettings(): void {
     this.settingsService.setTenantIdentifier('');

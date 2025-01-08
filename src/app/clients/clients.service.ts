@@ -19,6 +19,20 @@ export class ClientsService {
     private auth: AuthenticationService
   ) { }
 
+
+  private readonly CLIENT_IMAGE_PERMISSIONS = {
+    '176': 'READ_CLIENT_IMAGE',
+    '177': 'CREATE_CLIENT_IMAGE', 
+    '178': 'DELETE_CLIENT_IMAGE'
+  } as const;
+  
+  // Add a helper method to get permission string from ID
+  public getPermissionString(permissionId: keyof typeof this.CLIENT_IMAGE_PERMISSIONS) {
+    return this.CLIENT_IMAGE_PERMISSIONS[permissionId];
+  }
+
+
+
   getFilteredClients(orderBy: string, sortOrder: string, orphansOnly: boolean, displayName: string, officeId?: any): Observable<any> {
     let httpParams = new HttpParams()
       .set('displayName', displayName)
@@ -193,23 +207,27 @@ export class ClientsService {
   }
 
 
+
   getClientProfileImage(clientId: string) {
     const httpParams = new HttpParams().set('maxHeight', '150');
     
-    return this.auth.hasPermission('READ_CLIENT_IMAGE').pipe(
+    console.log('Checking permission:', this.getPermissionString('176'));
+    return this.auth.hasPermission(this.getPermissionString('176')).pipe(
       mergeMap((hasPermission: boolean) => {
         if (hasPermission) {
           return this.http.skipErrorHandler().get(
-            `/clients/${clientId}/images`, 
+            `/clients/${clientId}/images`,
             { params: httpParams, responseType: 'text' }
           );
         } else {
-          console.warn('No permission to view client images');
+          console.warn('No permission to view client images (ID: 176)');
           return of(null);
         }
       })
     );
-}
+  }
+
+  
 
 
  // getClientProfileImage(clientId: string) {
@@ -217,20 +235,43 @@ export class ClientsService {
  //   return this.http.skipErrorHandler().get(`/clients/${clientId}/images`, { params: httpParams, responseType: 'text' });
  // }
 
-  uploadClientProfileImage(clientId: string, image: File) {
-    const formData = new FormData();
-    formData.append('file', image);
-    formData.append('filename', 'file');
-    return this.http.post(`/clients/${clientId}/images`, formData);
-  }
+ 
+ uploadClientProfileImage(clientId: string, image: File) {
+  return this.auth.hasPermission(this.getPermissionString('177')).pipe(
+    mergeMap((hasPermission: boolean) => {
+      if (hasPermission) {
+        const formData = new FormData();
+        formData.append('file', image);
+        formData.append('filename', 'file');
+        return this.http.post(`/clients/${clientId}/images`, formData);
+      } else {
+        console.warn('No permission to upload client images (ID: 177)');
+        return of(null);
+      }
+    })
+  );
+}
+
 
   uploadCapturedClientProfileImage(clientId: string, imageURL: string) {
     return this.http.post(`/clients/${clientId}/images`, imageURL);
   }
 
+
   deleteClientProfileImage(clientId: string) {
-    return this.http.delete(`/clients/${clientId}/images`);
+    return this.auth.hasPermission(this.getPermissionString('178')).pipe(
+      mergeMap((hasPermission: boolean) => {
+        if (hasPermission) {
+          return this.http.delete(`/clients/${clientId}/images`);
+        } else {
+          console.warn('No permission to delete client images (ID: 178)');
+          return of(null);
+        }
+      })
+    );
   }
+
+
 
   uploadClientSignatureImage(clientId: string, signature: File) {
     const formData = new FormData();

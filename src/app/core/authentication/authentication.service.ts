@@ -406,14 +406,36 @@ export class AuthenticationService {
     return this.userLoggedIn;
   }
 
+  setUserPermissions(permissions: string[]) {
+    this.userPermissions = permissions || [];
+    // Optional: store in localStorage/sessionStorage if you want permissions to persist
+    this.storage.setItem('permissions', JSON.stringify(this.userPermissions));
+  }
+
+
   hasPermission(permission: string): Observable<boolean> {
+    // Add logging to debug the permission check process
+    console.log('Checking permission:', permission);
+    console.log('Current user permissions:', this.userPermissions);
+    
+    // Your existing permission check logic
     permission = permission.trim();
-    const result = this.userPermissions.includes('ALL_FUNCTIONS') || 
+    const result = this.userPermissions.includes('ALL_FUNCTIONS') ||
       (permission.substring(0, 5) === 'READ_' && this.userPermissions.includes('ALL_FUNCTIONS_READ')) ||
       this.userPermissions.includes(permission);
     
+    // Add logging for the result
+    console.log('Permission check result:', {
+      permission,
+      hasAllFunctions: this.userPermissions.includes('ALL_FUNCTIONS'),
+      hasAllRead: this.userPermissions.includes('ALL_FUNCTIONS_READ'),
+      hasSpecificPermission: this.userPermissions.includes(permission),
+      finalResult: result
+    });
+  
     return of(result);
   }
+
 }
 
 
