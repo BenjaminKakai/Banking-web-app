@@ -6,17 +6,12 @@ export const environment = {
   version: env.mifos_x.version,
   hash: env.mifos_x.hash,
   // For connecting to server running elsewhere update the tenant identifier
-fineractPlatformTenantId: window['env']['fineractPlatformTenantId'] || 'default',
-fineractPlatformTenantIds: window['env']['fineractPlatformTenantIds'] || 'default',
-
-// For connecting to other servers running elsewhere update the base API URL
-baseApiUrls: window['env']['fineractApiUrls'] || 
-  'https://dev.mifos.io,https://demo.mifos.io,https://qa.mifos.io,https://staging.mifos.io,https://mobile.mifos.io,https://demo.fineract.dev,https://localhost:8443',
-
-  // For connecting to server running elsewhere set the base API URL
-  baseApiUrl: 'http://167.172.152.104:8443',
-  
-  allowServerSwitch: env.allow_switching_backend_instance,
+  fineractPlatformTenantId: window['env']['fineractPlatformTenantId'] || 'default',
+  fineractPlatformTenantIds: window['env']['fineractPlatformTenantIds'] || 'default',
+  baseApiUrls: window['env']['fineractApiUrls'] || 
+    'https://dev.mifos.io,https://demo.mifos.io,https://qa.mifos.io,https://staging.mifos.io,https://mobile.mifos.io,https://demo.fineract.dev,https://localhost:8443',
+    baseApiUrl: 'https://206.189.188.153',
+    allowServerSwitch: env.allow_switching_backend_instance,
   apiProvider: window['env']['apiProvider'] || '/fineract-provider/api',
   apiVersion: window['env']['apiVersion'] || '/v1',
   serverUrl: '',
