@@ -1,10 +1,11 @@
-// IMPORTANT: THIS FILE IS AUTO GENERATED! DO NOT MANUALLY EDIT OR CHECKIN!
-/* tslint:disable */
+// .env.ts
 export default {
   'mifos_x': {
     'version': '241220',
     'hash': 'ba3aef49'
   },
-  'allow_switching_backend_instance': true
+  'allow_switching_backend_instance': true,
+  'oauth': {
+    'appId': 'Iv23ctwEaByHNEVJ2Ab6'
+  }
 };
-/* tslint:enable */
